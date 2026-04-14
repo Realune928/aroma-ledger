@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>芳疗收入记账</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600&family=DM+Serif+Display:ital@0;1&family=Noto+Sans+SC:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #faf7f2;
+    --surface: #fff9f0;
+    --border: #e8ddd0;
+    --accent: #8b6f47;
+    --accent-light: #c4a882;
+    --accent-pale: #f0e8dc;
+    --text-main: #3a2e22;
+    --text-mid: #7a6a58;
+    --text-soft: #b0a090;
+    --green: #5a7a5a;
+    --green-pale: #e8f0e8;
+    --red: #8b3a3a;
+    --gold: #c49a3c;
+    --shadow: 0 2px 16px rgba(139,111,71,0.10);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    font-family: 'Noto Sans SC', sans-serif;
+    color: var(--text-main);
+    min-height: 100vh;
+    padding: 0 0 60px;
+  }
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 28px 20px 20px;
+    text-align: center;
+  }
+  .header-deco {
+    font-family: 'DM Serif Display', serif;
+    font-style: italic;
+    color: var(--accent-light);
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .header h1 {
+    font-family: 'Noto Serif SC', serif;
+    font-weight: 600;
+    font-size: 22px;
+    color: var(--text-main);
+    letter-spacing: 2px;
+  }
+  .header-sub { font-size: 12px; color: var(--text-soft); margin-top: 4px; letter-spacing: 1px; }
+  .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 18px 16px 0; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 10px 12px;
+    text-align: center;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent-light), var(--gold));
+  }
+  .card-label { font-size: 10px; color: var(--text-soft); letter-spacing: 1.5px; margin-bottom: 6px; }
+  .card-value { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--accent); }
+  .card-value.big { font-size: 24px; color: var(--text-main); }
+  .card-sub { font-size: 10px; color: var(--text-soft); margin-top: 3px; }
+  .month-bar { display: flex; align-items: center; justify-content: space-between; padding: 16px 16px 0; }
+  .month-bar select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 13px;
+    color: var(--text-main);
+    cursor: pointer;
+    outline: none;
+  }
+  .month-label { font-family: 'Noto Serif SC', serif; font-size: 15px; color: var(--text-mid); letter-spacing: 1px; }
+  .add-section {
+    margin: 16px 16px 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .add-toggle {
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    font-family: 'Noto Serif SC', serif;
+    font-size: 14px;
+    color: var(--accent);
+    letter-spacing: 1px;
+  }
+  .add-toggle .plus {
+    width: 24px; height: 24px;
+    background: var(--accent-pale);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    color: var(--accent);
+    transition: transform 0.3s;
+  }
+  .add-toggle.open .plus { transform: rotate(45deg); }
+  .add-form { display: none; padding: 0 16px 16px; flex-direction: column; gap: 10px; animation: slideDown 0.25s ease; }
+  .add-form.visible { display: flex; }
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group label { font-size: 11px; color: var(--text-soft); letter-spacing: 1px; }
+  .form-group input, .form-group select, .form-group textarea {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 13px;
+    color: var(--text-main);
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+  .form-group input:focus, .form-group select:focus { border-color: var(--accent-light); }
+  .form-group textarea { resize: none; height: 60px; font-size: 12px; }
+  .btn-add {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--gold) 100%);
+    color: white; border: none; border-radius: 8px; padding: 11px;
+    font-family: 'Noto Serif SC', serif; font-size: 14px; letter-spacing: 2px;
+    cursor: pointer; margin-top: 2px; transition: opacity 0.2s;
+  }
+  .btn-add:hover { opacity: 0.88; }
+  .batch-section {
+    margin: 10px 16px 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .batch-toggle {
+    width: 100%; background: none; border: none; padding: 14px 18px;
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; font-family: 'Noto Serif SC', serif; font-size: 14px;
+    color: var(--text-mid); letter-spacing: 1px;
+  }
+  .batch-toggle .batch-icon { font-size: 15px; transition: transform 0.3s; }
+  .batch-toggle.open .batch-icon { transform: rotate(180deg); }
+  .batch-form { display: none; padding: 0 16px 16px; flex-direction: column; gap: 10px; animation: slideDown 0.25s ease; }
+  .batch-form.visible { display: flex; }
+  .batch-hint { font-size: 11px; color: var(--text-soft); line-height: 1.7; background: var(--accent-pale); border-radius: 8px; padding: 10px 12px; }
+  .batch-hint code { font-family: monospace; font-size: 11px; color: var(--accent); }
+  .batch-form textarea {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 12px; font-family: 'Noto Sans SC', sans-serif; font-size: 13px;
+    color: var(--text-main); resize: none; height: 100px; outline: none; transition: border-color 0.2s;
+  }
+  .batch-form textarea:focus { border-color: var(--accent-light); }
+  .batch-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .batch-preview {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 12px; font-size: 12px; color: var(--text-mid); display: none; flex-direction: column; gap: 6px;
+  }
+  .batch-preview.visible { display: flex; }
+  .preview-item { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px dashed var(--border); }
+  .preview-item:last-child { border-bottom: none; }
+  .preview-name { color: var(--text-main); }
+  .preview-amt { color: var(--green); font-weight: 600; }
+  .preview-total { display: flex; justify-content: space-between; font-family: 'Noto Serif SC', serif; font-size: 13px; padding-top: 4px; color: var(--accent); border-top: 1px solid var(--border); margin-top: 2px; }
+  .btn-batch {
+    background: linear-gradient(135deg, var(--green) 0%, #7aaa7a 100%);
+    color: white; border: none; border-radius: 8px; padding: 11px;
+    font-family: 'Noto Serif SC', serif; font-size: 14px; letter-spacing: 2px;
+    cursor: pointer; transition: opacity 0.2s;
+  }
+  .btn-batch:hover { opacity: 0.88; }
+  .btn-batch:disabled { opacity: 0.4; cursor: not-allowed; }
+  .breakdown { margin: 16px 16px 0; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; box-shadow: var(--shadow); }
+  .section-title { font-family: 'Noto Serif SC', serif; font-size: 13px; color: var(--text-mid); letter-spacing: 2px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .cat-bars { display: flex; flex-direction: column; gap: 8px; }
+  .cat-row { display: flex; flex-direction: column; gap: 4px; }
+  .cat-meta { display: flex; justify-content: space-between; font-size: 12px; }
+  .cat-name { color: var(--text-mid); }
+  .cat-amt { color: var(--accent); font-weight: 600; }
+  .bar-track { height: 5px; background: var(--accent-pale); border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; background: linear-gradient(90deg, var(--accent-light), var(--gold)); }
+  .records-section { margin: 16px 16px 0; }
+  .records-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .record-count { font-size: 11px; color: var(--text-soft); background: var(--accent-pale); padding: 3px 8px; border-radius: 20px; }
+  .record-item {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 13px 14px; margin-bottom: 8px; display: flex; align-items: flex-start; gap: 12px;
+    box-shadow: 0 1px 6px rgba(139,111,71,0.06); animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  .record-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+  .record-body { flex: 1; min-width: 0; }
+  .record-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 3px; }
+  .record-title { font-family: 'Noto Serif SC', serif; font-size: 14px; color: var(--text-main); }
+  .record-amount { font-family: 'DM Serif Display', serif; font-size: 16px; color: var(--green); white-space: nowrap; }
+  .record-meta { font-size: 11px; color: var(--text-soft); display: flex; gap: 8px; flex-wrap: wrap; }
+  .record-note { font-size: 11px; color: var(--text-soft); margin-top: 4px; font-style: italic; border-left: 2px solid var(--border); padding-left: 8px; }
+  .btn-del { background: none; border: none; cursor: pointer; color: var(--text-soft); font-size: 13px; padding: 2px 4px; border-radius: 4px; transition: color 0.2s; flex-shrink: 0; }
+  .btn-del:hover { color: var(--red); }
+  .empty-state { text-align: center; padding: 36px 20px; color: var(--text-soft); font-size: 13px; line-height: 1.8; }
+  .empty-state .emoji { font-size: 28px; margin-bottom: 8px; }
+  .dot-service { background: #8b6f47; }
+  .dot-product { background: #5a7a5a; }
+  .dot-course  { background: #c49a3c; }
+  .dot-consult { background: #7a6a8b; }
+  .dot-other   { background: #b0a090; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-deco">Aromatherapy · Income Ledger</div>
+  <h1>芳疗收入记账</h1>
+  <div class="header-sub" id="today-date"></div>
+</div>
+
+<div class="summary">
+  <div class="card">
+    <div class="card-label">本月收入</div>
+    <div class="card-value big" id="s-month">¥0</div>
+    <div class="card-sub" id="s-month-count">— 笔</div>
+  </div>
+  <div class="card">
+    <div class="card-label">本年累计</div>
+    <div class="card-value" id="s-year">¥0</div>
+    <div class="card-sub" id="s-year-count">— 笔</div>
+  </div>
+  <div class="card">
+    <div class="card-label">笔均收入</div>
+    <div class="card-value" id="s-avg">¥0</div>
+    <div class="card-sub">本月均值</div>
+  </div>
+</div>
+
+<div class="month-bar">
+  <div class="month-label" id="month-label"></div>
+  <select id="month-select" onchange="changeMonth()"></select>
+</div>
+
+<div class="add-section">
+  <button class="add-toggle" id="add-toggle" onclick="toggleForm()">
+    <span>记录新收入</span>
+    <span class="plus">+</span>
+  </button>
+  <div class="add-form" id="add-form">
+    <div class="form-row">
+      <div class="form-group">
+        <label>日期</label>
+        <input type="date" id="f-date">
+      </div>
+      <div class="form-group">
+        <label>金额（元）</label>
+        <input type="number" id="f-amount" placeholder="0" min="0">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>类型</label>
+        <select id="f-cat">
+          <option value="service">服务 · 疗程</option>
+          <option value="product">产品 · 配方</option>
+          <option value="course">课程 · 工作坊</option>
+          <option value="consult">咨询 · 个案</option>
+          <option value="other">其他</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>客户 / 项目名</label>
+        <input type="text" id="f-name" placeholder="选填">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>备注</label>
+      <textarea id="f-note" placeholder="香气、感受、后续……"></textarea>
+    </div>
+    <button class="btn-add" onclick="addEntry()">记 入 账 本</button>
+  </div>
+</div>
+
+<div class="batch-section">
+  <button class="batch-toggle" id="batch-toggle" onclick="toggleBatch()">
+    <span>批量录入</span>
+    <span class="batch-icon">▾</span>
+  </button>
+  <div class="batch-form" id="batch-form">
+    <div class="batch-hint">
+      每行一笔，格式：<code>产品名 金额</code>（空格分隔）<br>
+      支持数量：<code>花眠/30ml 268×2</code> 或 <code>花眠/30ml 268*2</code>
+    </div>
+    <div class="batch-row">
+      <div class="form-group">
+        <label>日期</label>
+        <input type="date" id="b-date">
+      </div>
+      <div class="form-group">
+        <label>客户名</label>
+        <input type="text" id="b-client" placeholder="选填">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>类型</label>
+      <select id="b-cat">
+        <option value="product">产品 · 配方</option>
+        <option value="service">服务 · 疗程</option>
+        <option value="course">课程 · 工作坊</option>
+        <option value="consult">咨询 · 个案</option>
+        <option value="other">其他</option>
+      </select>
+    </div>
+    <textarea id="b-text" placeholder="花眠/30ml 268&#10;花颜/50g 278&#10;复配纯露/100ml 98" oninput="parseBatch()"></textarea>
+    <div class="batch-preview" id="b-preview"></div>
+    <button class="btn-batch" id="b-submit" onclick="submitBatch()" disabled>批 量 记 入</button>
+  </div>
+</div>
+
+<div class="breakdown" id="breakdown-section">
+  <div class="section-title">本月分类</div>
+  <div class="cat-bars" id="cat-bars"></div>
+</div>
+
+<div class="records-section">
+  <div class="records-header">
+    <div class="section-title" style="margin-bottom:0; flex:1">明细记录</div>
+    <div class="record-count" id="rec-count">0 笔</div>
+  </div>
+  <div id="records-list"></div>
+</div>
+
+<script>
+const CAT = {
+  service: { label: '服务 · 疗程', dot: 'dot-service' },
+  product: { label: '产品 · 配方', dot: 'dot-product' },
+  course:  { label: '课程 · 工作坊', dot: 'dot-course' },
+  consult: { label: '咨询 · 个案', dot: 'dot-consult' },
+  other:   { label: '其他', dot: 'dot-other' },
+};
+
+const HISTORY = [
+  {id:1700000000000,date:"2026-01-15",amount:180,cat:"product",name:"大喵",note:"凝香玉肤精华油30ml+妆前精华100ml"},
+  {id:1700000000001,date:"2025-01-25",amount:294,cat:"product",name:"大喵",note:"苦橙花卸妆油+提亮修复面油+花园护理+纯露"},
+  {id:1700000000002,date:"2025-03-18",amount:120,cat:"product",name:"陈慧",note:"保湿修复面油15ml"},
+  {id:1700000000003,date:"2025-03-18",amount:467,cat:"product",name:"团宝妈妈",note:"儿童脾胃油+湿疹膏+精华油+纯露+疤痕修复油"},
+  {id:1700000000004,date:"2025-04-25",amount:365,cat:"product",name:"大喵",note:"植萃卸妆油+摩洛哥橙花精华油+花园护理油"},
+  {id:1700000000005,date:"2025-04-26",amount:136,cat:"product",name:"团宝妈妈",note:"植萃卸妆油120ml"},
+  {id:1700000000006,date:"2025-05-16",amount:66,cat:"product",name:"陈慧",note:"儿童提振免疫按摩油30ml"},
+  {id:1700000000007,date:"2025-05-29",amount:260,cat:"product",name:"陈慧",note:"舒缓身心30ml"},
+  {id:1700000000008,date:"2025-07-09",amount:520,cat:"product",name:"大喵",note:"逆龄抗衰精华油+精粹水+面霜（赠品不计）"},
+  {id:1700000000009,date:"2025-07-10",amount:180,cat:"product",name:"陈慧",note:"逆龄抗衰精华油30ml"},
+  {id:1700000000010,date:"2025-08-21",amount:404,cat:"product",name:"大喵",note:"植萃消炎卸妆油+消炎修复精华油+大马士革玫瑰花苞"},
+  {id:1700000000011,date:"2025-09-17",amount:568,cat:"product",name:"大喵",note:"白云兰香+卸妆油+花园护理+纯露+单方精油"},
+  {id:1700000000012,date:"2025-11-15",amount:457,cat:"product",name:"大喵",note:"玫瑰苦橙叶精华油+卸妆油+纯露+单方精油"},
+  {id:1700000000013,date:"2025-12-06",amount:312,cat:"product",name:"雪儿",note:"植萃卸妆油+玫檀精华油+冬季面霜"},
+  {id:1700000000014,date:"2025-12-07",amount:312,cat:"product",name:"大喵",note:"植萃卸妆油+玫檀精华油+冬季面霜"},
+  {id:1700000000015,date:"2025-07-01",amount:658,cat:"product",name:"大苗",note:"三伏油×2+气血温阳+减脂排水+三伏油(刮背)+卸妆油"},
+  {id:1700000000016,date:"2025-08-01",amount:1030,cat:"product",name:"祝娟",note:"沉溺ETD+女神香氛油+安神入睡+檀香梦境+茉莉+茉莉Fragrance×2"},
+  {id:1700000000017,date:"2025-08-02",amount:78,cat:"product",name:"徐温月",note:"沉溺纯精油5ml"},
+  {id:1700000000018,date:"2025-08-03",amount:240,cat:"product",name:"范沐西",note:"茉莉Fragrance 10ml×2"},
+  {id:1700000000019,date:"2025-08-04",amount:380,cat:"product",name:"阿慧",note:"植物驱蚊水×2+茉莉Fragrance×2"}
+];
+
+let allEntries = JSON.parse(localStorage.getItem('aroma_entries') || '[]');
+
+if (!localStorage.getItem('aroma_history_v2')) {
+  const ids = new Set(allEntries.map(e => e.id));
+  HISTORY.forEach(e => { if (!ids.has(e.id)) allEntries.push(e); });
+  allEntries.sort((a,b) => b.date.localeCompare(a.date));
+  localStorage.setItem('aroma_entries', JSON.stringify(allEntries));
+  localStorage.setItem('aroma_history_v1', '1');
+  localStorage.setItem('aroma_history_v2', '1');
+}
+
+let currentMonth = '';
+
+const now = new Date();
+document.getElementById('today-date').textContent =
+  now.toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
+document.getElementById('f-date').value = now.toISOString().slice(0,10);
+document.getElementById('b-date').value = now.toISOString().slice(0,10);
+
+function save() { localStorage.setItem('aroma_entries', JSON.stringify(allEntries)); }
+
+function getMonths() {
+  const months = new Set();
+  months.add(`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`);
+  allEntries.forEach(e => months.add(e.date.slice(0,7)));
+  return [...months].sort().reverse();
+}
+
+function buildMonthSelect() {
+  const sel = document.getElementById('month-select');
+  const months = getMonths();
+  sel.innerHTML = months.map(m => {
+    const [y,mo] = m.split('-');
+    return `<option value="${m}">${y}年${parseInt(mo)}月</option>`;
+  }).join('');
+  if (!currentMonth || !months.includes(currentMonth)) currentMonth = months[0];
+  sel.value = currentMonth;
+  const [y,mo] = currentMonth.split('-');
+  document.getElementById('month-label').textContent = `${y}年${parseInt(mo)}月`;
+}
+
+function changeMonth() {
+  currentMonth = document.getElementById('month-select').value;
+  const [y,mo] = currentMonth.split('-');
+  document.getElementById('month-label').textContent = `${y}年${parseInt(mo)}月`;
+  render();
+}
+
+function toggleForm() {
+  document.getElementById('add-form').classList.toggle('visible');
+  document.getElementById('add-toggle').classList.toggle('open');
+}
+
+function toggleBatch() {
+  document.getElementById('batch-form').classList.toggle('visible');
+  document.getElementById('batch-toggle').classList.toggle('open');
+}
+
+function addEntry() {
+  const date   = document.getElementById('f-date').value;
+  const amount = parseFloat(document.getElementById('f-amount').value);
+  const cat    = document.getElementById('f-cat').value;
+  const name   = document.getElementById('f-name').value.trim();
+  const note   = document.getElementById('f-note').value.trim();
+  if (!date || !amount || amount <= 0) { alert('请填写日期和金额'); return; }
+  allEntries.push({ id: Date.now(), date, amount, cat, name, note });
+  allEntries.sort((a,b) => b.date.localeCompare(a.date));
+  save();
+  document.getElementById('f-amount').value = '';
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-note').value = '';
+  currentMonth = date.slice(0,7);
+  buildMonthSelect();
+  render();
+  toggleForm();
+}
+
+function deleteEntry(id) {
+  if (!confirm('删除这笔记录？')) return;
+  allEntries = allEntries.filter(e => e.id !== id);
+  save();
+  buildMonthSelect();
+  render();
+}
+
+function fmt(n) {
+  return '¥' + n.toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+function parseLine(line) {
+  line = line.trim();
+  if (!line) return null;
+  const m = line.match(/^(.+?)\s+(\d+(?:\.\d+)?)(?:[×x\*](\d+(?:\.\d+)?))?/i);
+  if (!m) return null;
+  const name  = m[1].trim();
+  const price = parseFloat(m[2]);
+  const qty   = m[3] ? parseFloat(m[3]) : 1;
+  return { name, price, qty, amount: price * qty };
+}
+
+let batchParsed = [];
+
+function parseBatch() {
+  const lines = document.getElementById('b-text').value.split('\n').filter(l => l.trim());
+  batchParsed = lines.map(parseLine).filter(Boolean);
+  const preview = document.getElementById('b-preview');
+  const btn     = document.getElementById('b-submit');
+  if (!batchParsed.length) { preview.classList.remove('visible'); btn.disabled = true; return; }
+  const total = batchParsed.reduce((s,i) => s + i.amount, 0);
+  preview.classList.add('visible');
+  preview.innerHTML = batchParsed.map(i => `
+    <div class="preview-item">
+      <span class="preview-name">${i.name}${i.qty > 1 ? ' ×'+i.qty : ''}</span>
+      <span class="preview-amt">¥${i.amount.toLocaleString()}</span>
+    </div>
+  `).join('') + `
+    <div class="preview-total">
+      <span>合计 ${batchParsed.length} 笔</span>
+      <span>¥${total.toLocaleString()}</span>
+    </div>`;
+  btn.disabled = false;
+}
+
+function submitBatch() {
+  if (!batchParsed.length) return;
+  const date   = document.getElementById('b-date').value;
+  const client = document.getElementById('b-client').value.trim();
+  const cat    = document.getElementById('b-cat').value;
+  if (!date) { alert('请填写日期'); return; }
+  batchParsed.forEach((item, i) => {
+    allEntries.push({
+      id: Date.now() + i, date, amount: item.amount, cat,
+      name: client ? `${client} · ${item.name}` : item.name,
+      note: item.qty > 1 ? `单价 ¥${item.price} × ${item.qty}` : '',
+    });
+  });
+  allEntries.sort((a,b) => b.date.localeCompare(a.date));
+  save();
+  document.getElementById('b-text').value = '';
+  document.getElementById('b-client').value = '';
+  document.getElementById('b-preview').classList.remove('visible');
+  document.getElementById('b-submit').disabled = true;
+  batchParsed = [];
+  currentMonth = date.slice(0,7);
+  buildMonthSelect();
+  render();
+  toggleBatch();
+}
+
+function render() {
+  const curY = currentMonth.slice(0,4);
+  const monthItems = allEntries.filter(e => e.date.slice(0,7) === currentMonth);
+  const yearItems  = allEntries.filter(e => e.date.slice(0,4) === curY);
+  const mTotal = monthItems.reduce((s,e) => s+e.amount, 0);
+  const yTotal = yearItems.reduce((s,e) => s+e.amount, 0);
+  const avg    = monthItems.length ? mTotal / monthItems.length : 0;
+  document.getElementById('s-month').textContent = fmt(mTotal);
+  document.getElementById('s-month-count').textContent = monthItems.length + ' 笔';
+  document.getElementById('s-year').textContent = fmt(yTotal);
+  document.getElementById('s-year-count').textContent = yearItems.length + ' 笔';
+  document.getElementById('s-avg').textContent = fmt(avg);
+  const catTotals = {};
+  monthItems.forEach(e => { catTotals[e.cat] = (catTotals[e.cat] || 0) + e.amount; });
+  const catBars = document.getElementById('cat-bars');
+  if (!Object.keys(catTotals).length) {
+    catBars.innerHTML = '<div style="font-size:12px;color:var(--text-soft);text-align:center;padding:8px 0">暂无数据</div>';
+  } else {
+    catBars.innerHTML = Object.entries(catTotals).sort((a,b) => b[1]-a[1]).map(([cat, amt]) => `
+      <div class="cat-row">
+        <div class="cat-meta">
+          <span class="cat-name">${CAT[cat].label}</span>
+          <span class="cat-amt">${fmt(amt)}</span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:${(amt/mTotal*100).toFixed(1)}%"></div>
+        </div>
+      </div>`).join('');
+  }
+  const list = document.getElementById('records-list');
+  document.getElementById('rec-count').textContent = monthItems.length + ' 笔';
+  if (!monthItems.length) {
+    list.innerHTML = `<div class="empty-state"><div class="emoji">🌿</div>这个月还没有记录<br>记录第一笔收入吧</div>`;
+    return;
+  }
+  list.innerHTML = monthItems.map(e => {
+    const c = CAT[e.cat];
+    const d = new Date(e.date + 'T00:00:00');
+    const dateStr = d.toLocaleDateString('zh-CN', { month:'numeric', day:'numeric', weekday:'short' });
+    return `
+      <div class="record-item">
+        <div class="record-dot ${c.dot}"></div>
+        <div class="record-body">
+          <div class="record-top">
+            <div class="record-title">${e.name || c.label}</div>
+            <div class="record-amount">+${fmt(e.amount)}</div>
+          </div>
+          <div class="record-meta">
+            <span>${dateStr}</span>
+            <span>${c.label}</span>
+          </div>
+          ${e.note ? `<div class="record-note">${e.note}</div>` : ''}
+        </div>
+        <button class="btn-del" onclick="deleteEntry(${e.id})">×</button>
+      </div>`;
+  }).join('');
+}
+
+buildMonthSelect();
+render();
+</script>
+</body>
+</html>
